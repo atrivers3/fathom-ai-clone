@@ -158,8 +158,12 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
               </button>
             </div>
             <div className="space-y-1">
-              {meetings.slice(0, 4).map((meeting) => {
+              {[
+                ...meetings.filter((m) => m.id === 'meeting-8p-60m'),
+                ...meetings.filter((m) => m.id !== 'meeting-8p-60m'),
+              ].slice(0, 5).map((meeting) => {
                 const isSelected = selectedMeetingId === meeting.id;
+                const isPinned = meeting.id === 'meeting-8p-60m';
                 return (
                   <button
                     key={meeting.id}
@@ -171,18 +175,22 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-2 group ${
                       isSelected
                         ? 'bg-slate-800 text-white font-medium border-l-2 border-blue-500 pl-2.5'
+                        : isPinned
+                        ? 'text-indigo-200 bg-indigo-950/40 hover:bg-indigo-950/70 border border-indigo-800/40'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                     }`}
                   >
                     <CircleDot
                       className={`w-2.5 h-2.5 shrink-0 ${
-                        meeting.id === 'meeting-8p-60m'
-                          ? 'text-amber-400'
+                        isPinned
+                          ? 'text-amber-400 fill-amber-400'
                           : 'text-slate-500 group-hover:text-slate-400'
                       }`}
                     />
-                    <span className="truncate flex-1">{meeting.title}</span>
-                    <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                    <span className="truncate flex-1 font-medium">
+                      {isPinned ? '⭐ ' : ''}{meeting.title}
+                    </span>
+                    <span className={`text-[10px] shrink-0 font-mono ${isPinned ? 'text-amber-300 font-bold' : 'text-slate-400'}`}>
                       {meeting.durationFormatted}
                     </span>
                   </button>

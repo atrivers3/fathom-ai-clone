@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMeeting } from '@/context/MeetingContext';
 import { Meeting } from '@/types/meeting';
 import {
@@ -12,49 +12,212 @@ import {
   AlertCircle,
   Video,
   Bot,
+  Sparkles,
 } from 'lucide-react';
 
-export default function RecordMeetingModal() {
-  const { recordModalOpen, setRecordModalOpen, addMeeting } = useMeeting();
+interface PresetDefinition {
+  title: string;
+  category: 'Product' | 'Engineering' | 'Executive' | 'Design' | 'Sales' | 'Operations';
+  platform: 'google-meet' | 'zoom' | 'microsoft-teams';
+  oneSentenceSummary: string;
+  keyDecisions: string[];
+  actionItems: { text: string; assigneeName: string; dueDate: string }[];
+  dialogue: { speaker: string; text: string }[];
+}
 
-  const [platform, setPlatform] = useState<'google-meet' | 'zoom' | 'microsoft-teams'>('google-meet');
-  const [meetingTitle, setMeetingTitle] = useState('Product Strategy & Edge AI Alignment');
+const SAAS_PRESETS: PresetDefinition[] = [
+  {
+    title: 'Client Discovery — TechCorp Enterprise',
+    category: 'Sales',
+    platform: 'zoom',
+    oneSentenceSummary:
+      'Evaluated TechCorp\'s 850-seat migration to automated call intelligence, confirming SOC2 compliance sign-off and scheduling a 30-day proof of concept.',
+    keyDecisions: [
+      'Approved 30-day sandbox pilot for 50 sales leaders starting next Monday.',
+      'Confirmed enterprise pricing tier of $24/seat with volume discount applied.',
+      'Secured Chief Information Security Officer sign-off pending SOC2 Type II report.',
+    ],
+    actionItems: [
+      {
+        text: 'Deliver SOC2 Type II report and FINRA compliance whitepaper to TechCorp legal',
+        assigneeName: 'Ayan Aslam',
+        dueDate: 'Friday',
+      },
+      {
+        text: 'Provision staging SSO tenant with Okta SAML 2.0 integration',
+        assigneeName: 'Alex Vance',
+        dueDate: 'Monday',
+      },
+    ],
+    dialogue: [
+      { speaker: 'Fathom Bot', text: 'Connected to live Zoom conference room (1080p HD stream).' },
+      { speaker: 'Ayan Aslam', text: 'Hi Sarah, thank you for joining our discovery session today.' },
+      { speaker: 'Sarah Jenkins', text: 'Excited to be here. Our 850 account execs lose almost two hours daily manually logging CRM notes.' },
+      { speaker: 'Ayan Aslam', text: 'Fathom syncs action items and summaries directly to Salesforce and HubSpot within seconds after call completion.' },
+      { speaker: 'Sarah Jenkins', text: 'That addresses our biggest pain point. How does your transcription pipeline handle proprietary terminology?' },
+      { speaker: 'Ayan Aslam', text: 'We offer custom vocabulary injection with phonetic boosting for tickers, acronyms, and product SKUs.' },
+      { speaker: 'Sarah Jenkins', text: 'Fantastic. If our security team approves the SOC2 package, we are ready to pilot 50 seats next week.' },
+      { speaker: 'Ayan Aslam', text: 'I will personally send over our security audit report and pilot agreement by 5 PM today.' },
+      { speaker: 'Fathom Bot', text: 'Synthesizing action items and commercial terms for export.' },
+    ],
+  },
+  {
+    title: 'Q3 Roadmap & Edge AI Acceleration',
+    category: 'Engineering',
+    platform: 'google-meet',
+    oneSentenceSummary:
+      'Finalized engineering benchmarks for the 8-bit quantized streaming engine and approved Thursday\'s four-phase canary rollout across primary clusters.',
+    keyDecisions: [
+      'Standardized on 8-bit quantized streaming diarization yielding 48 tokens/second.',
+      'Approved four-phase canary rollout starting Thursday at 09:00 UTC.',
+      'Mandated strict 12-second ephemeral RAM buffer zeroization for customer audio data.',
+    ],
+    actionItems: [
+      {
+        text: 'Deploy Datadog APM monitors with automated rollback alerts for P99 latency > 500ms',
+        assigneeName: 'Marcus Thorne',
+        dueDate: 'Wednesday',
+      },
+      {
+        text: 'Complete chaos failover test between us-east-1 and us-west-2 clusters',
+        assigneeName: 'David Kalu',
+        dueDate: 'Thursday',
+      },
+    ],
+    dialogue: [
+      { speaker: 'Fathom Bot', text: 'Connected to Google Meet session (real-time 250ms ingest).' },
+      { speaker: 'Alex Vance', text: 'Welcome everyone. Today we sign off on the Q3 real-time inference architecture.' },
+      { speaker: 'Dr. Maya Lin', text: 'Quantizing our streaming model brought first-token latency under 120ms with 98.4% attribution accuracy.' },
+      { speaker: 'Marcus Thorne', text: 'Our edge ingest proxy handles WebRTC chunking cleanly with zero packet loss in load tests.' },
+      { speaker: 'David Kalu', text: 'Active-active multi-region failover tests recovered in 1.4 seconds with zero audio syllables dropped.' },
+      { speaker: 'Alex Vance', text: 'Outstanding results. Let\'s proceed with the four-phase canary deployment on Thursday.' },
+      { speaker: 'Priya Sharma', text: 'Security review is fully green; automated RAM zeroization passed all assertions.' },
+      { speaker: 'Fathom Bot', text: 'Live session recorded; indexing key technical decisions.' },
+    ],
+  },
+  {
+    title: 'Customer Success Quarterly Business Review',
+    category: 'Operations',
+    platform: 'microsoft-teams',
+    oneSentenceSummary:
+      'Reviewed enterprise renewal rates reaching 96% net retention and agreed on a priority support SLA for tier-1 accounts.',
+    keyDecisions: [
+      'Celebrated 96% net retention across top 40 enterprise accounts.',
+      'Committed to 15-minute response SLA for critical enterprise escalations.',
+      'Expanded customer onboarding team by 3 technical customer engineers.',
+    ],
+    actionItems: [
+      {
+        text: 'Publish updated quarterly benchmark report to customer advisory board',
+        assigneeName: 'Zoe Washington',
+        dueDate: 'Tuesday',
+      },
+      {
+        text: 'Schedule quarterly business reviews with top 10 expansion prospects',
+        assigneeName: 'Ayan Aslam',
+        dueDate: 'Next Friday',
+      },
+    ],
+    dialogue: [
+      { speaker: 'Fathom Bot', text: 'Connected to Microsoft Teams call.' },
+      { speaker: 'Zoe Washington', text: 'Hello team, let us review our Q3 customer health and retention numbers.' },
+      { speaker: 'Ayan Aslam', text: 'Our net dollar retention reached 124% this quarter, largely driven by executive meeting summary adoption.' },
+      { speaker: 'Zoe Washington', text: 'Customer satisfaction scores rose to 4.9 out of 5 since we introduced instant template switching.' },
+      { speaker: 'Sam Chen', text: 'We observed average daily time saved per sales rep increase to 68 minutes.' },
+      { speaker: 'Zoe Washington', text: 'Let us standardize this success framework for our Q4 enterprise onboarding cohort.' },
+      { speaker: 'Fathom Bot', text: 'Session concluding; compiling customer metrics overview.' },
+    ],
+  },
+  {
+    title: 'Product Design & Mobile Scrubber Review',
+    category: 'Design',
+    platform: 'zoom',
+    oneSentenceSummary:
+      'Approved high-precision haptic feedback for the mobile video scrubber and finalized token exports for iOS Safari and desktop web.',
+    keyDecisions: [
+      'Approved 44px minimum touch targets on mobile scrubber for iOS Safari.',
+      'Integrated subtle haptic vibration when scrubbing across key AI highlight moments.',
+      'Standardized design system token variables across Tailwind CSS v4 stylesheets.',
+    ],
+    actionItems: [
+      {
+        text: 'Export finalized Figma component tokens for mobile timeline widgets',
+        assigneeName: 'Elena Rostova',
+        dueDate: 'Monday',
+      },
+      {
+        text: 'Verify 60fps HTML5 canvas rendering performance on low-power mobile devices',
+        assigneeName: 'Marcus Thorne',
+        dueDate: 'Wednesday',
+      },
+    ],
+    dialogue: [
+      { speaker: 'Fathom Bot', text: 'Connected to Zoom design review.' },
+      { speaker: 'Elena Rostova', text: 'Let us walk through the updated mobile video player and interactive scrubber.' },
+      { speaker: 'Alex Vance', text: 'The tactile vibration when scrubbing over smart highlights feels remarkably intuitive.' },
+      { speaker: 'Elena Rostova', text: 'We tuned the minimum touch target to 44 pixels so one-handed scrubbing is effortless.' },
+      { speaker: 'Marcus Thorne', text: 'Canvas rendering keeps frame rates pinned at 60 frames per second without memory leaks.' },
+      { speaker: 'Elena Rostova', text: 'Wonderful, I will export the Figma variables into our Tailwind theme today.' },
+      { speaker: 'Fathom Bot', text: 'Design review complete; logging UX deliverables.' },
+    ],
+  },
+];
+
+interface ModalContentProps {
+  initialPresetIndex: number;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function RecordMeetingModalContent({
+  initialPresetIndex,
+  onClose,
+  onSaved,
+}: ModalContentProps) {
+  const { addMeeting } = useMeeting();
+
+  const [activePresetIndex, setActivePresetIndex] = useState(initialPresetIndex);
+  const currentPreset = SAAS_PRESETS[activePresetIndex % SAAS_PRESETS.length];
+
+  const [platform, setPlatform] = useState<'google-meet' | 'zoom' | 'microsoft-teams'>(
+    currentPreset.platform
+  );
+  const [meetingTitle, setMeetingTitle] = useState(currentPreset.title);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [simulatedLiveDialogue, setSimulatedLiveDialogue] = useState<string[]>([
-    'Fathom Bot: Connected to simulated audio stream.',
+    `${currentPreset.dialogue[0].speaker}: ${currentPreset.dialogue[0].text}`,
   ]);
 
-  // Timer ticker
-  // Timer ticker and simulated incoming live transcript lines
+  const dialogueIndexRef = useRef(1);
+
+  // Timer ticker and sequential incoming live transcript lines (no duplicates)
   useEffect(() => {
     if (!isRecording || isPaused) return;
-
-    const liveQuotes = [
-      'Alex Vance: "Let\'s make sure our edge proxy handles low latency gracefully."',
-      'Elena Rostova: "The user experience for transcript scrubbing feels very snappy."',
-      'Dr. Maya Lin: "Quantizing the model brought our latency down under 120 milliseconds."',
-      'Marcus Thorne: "Failover tests in staging show 1.4 second reconnection time."',
-      'Priya Sharma: "Confirming PII scrubbing is running on all ingest workers."',
-      'Zoe Washington: "Enterprise clients are eager for the 90-second turnaround SLA."',
-    ];
 
     const timer = setInterval(() => {
       setElapsedSeconds((prev) => {
         const next = prev + 1;
-        if (next > 0 && next % 4 === 0) {
-          const nextQuote = liveQuotes[Math.floor(next / 4) % liveQuotes.length];
-          setSimulatedLiveDialogue((lines) => [...lines, nextQuote]);
+        // Every 3 seconds, add next sequential dialogue line without repeating
+        if (next > 0 && next % 3 === 0) {
+          const preset = SAAS_PRESETS[activePresetIndex % SAAS_PRESETS.length];
+          const currIdx = dialogueIndexRef.current;
+          if (currIdx < preset.dialogue.length) {
+            const lineObj = preset.dialogue[currIdx];
+            dialogueIndexRef.current = currIdx + 1;
+            setSimulatedLiveDialogue((prevLines) => [
+              ...prevLines,
+              `${lineObj.speaker}: "${lineObj.text}"`,
+            ]);
+          }
         }
         return next;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isRecording, isPaused]);
-
-  if (!recordModalOpen) return null;
+  }, [isRecording, isPaused, activePresetIndex]);
 
   const formatElapsed = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -66,27 +229,44 @@ export default function RecordMeetingModal() {
     setIsRecording(true);
     setIsPaused(false);
     setElapsedSeconds(0);
-    setSimulatedLiveDialogue(['Fathom Bot: Connected to simulated audio stream.']);
+    dialogueIndexRef.current = 1;
+    const preset = SAAS_PRESETS[activePresetIndex % SAAS_PRESETS.length];
+    setSimulatedLiveDialogue([`${preset.dialogue[0].speaker}: ${preset.dialogue[0].text}`]);
+  };
+
+  const handleCyclePreset = () => {
+    const nextIdx = (activePresetIndex + 1) % SAAS_PRESETS.length;
+    setActivePresetIndex(nextIdx);
+    const nextPreset = SAAS_PRESETS[nextIdx];
+    setMeetingTitle(nextPreset.title);
+    setPlatform(nextPreset.platform);
+    setSimulatedLiveDialogue([`${nextPreset.dialogue[0].speaker}: ${nextPreset.dialogue[0].text}`]);
   };
 
   const handleStopAndSave = () => {
-    // Generate processed meeting
     const duration = Math.max(60, elapsedSeconds);
     const newMeetingId = `meeting-sim-${Date.now()}`;
+    const preset = SAAS_PRESETS[activePresetIndex % SAAS_PRESETS.length];
+
+    // Compute realistic 1-sentence AI summary
+    const summaryOverview =
+      meetingTitle.trim() === preset.title
+        ? preset.oneSentenceSummary
+        : `Productive ${preset.category.toLowerCase()} session titled "${meetingTitle.trim()}" focused on key deliverables, aligning stakeholders, and confirming immediate execution milestones.`;
 
     const newMeeting: Meeting = {
       id: newMeetingId,
-      title: meetingTitle.trim() || 'Simulated Live Meeting',
+      title: meetingTitle.trim() || preset.title,
       date: `Today • ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
       createdAt: new Date().toISOString(),
       durationSeconds: duration,
       durationFormatted: `${Math.ceil(duration / 60)}m`,
       platform,
-      category: 'Product',
+      category: preset.category,
       participants: [
         {
           id: 'spk-you',
-          name: 'Ayan Aslam (You)',
+          name: 'Ayan Aslam',
           email: 'ayan@fathom.ai',
           role: 'Host',
           avatar: 'AA',
@@ -100,92 +280,95 @@ export default function RecordMeetingModal() {
           avatar: 'FN',
           color: '#8B5CF6',
         },
+        {
+          id: 'spk-guest',
+          name: 'Sarah Jenkins',
+          email: 'sarah@client.internal',
+          role: 'VP Stakeholder',
+          avatar: 'SJ',
+          color: '#10B981',
+        },
       ],
       summary: {
-        overview: `Simulated recording captured via live mock flow. Meeting titled "${meetingTitle}" ran for ${formatElapsed(
-          duration
-        )} with real-time transcription and automatic action item synthesis.`,
-        keyDecisions: [
-          'Approved live edge proxy deployment configuration.',
-          'Confirmed 90-second executive summary SLA target for clients.',
-          'Verified simulated audio capture and real-time streaming pipeline.',
-        ],
+        overview: summaryOverview,
+        keyDecisions: preset.keyDecisions,
         templates: {
           'executive-brief': {
             title: 'Executive Brief',
-            description: 'Executive summary generated from simulated session.',
+            description: 'Executive takeaways synthesized from live session.',
             sections: [
               {
-                title: 'Outcomes',
-                items: [
-                  'Simulated recording completed with zero audio packet loss.',
-                  'Transcript processed and formatted according to Fathom schema.',
-                ],
+                title: 'Key Outcomes',
+                items: preset.keyDecisions,
               },
             ],
           },
           'engineering-arch': {
-            title: 'Engineering & Architecture',
-            description: 'Technical notes.',
+            title: 'Engineering & Delivery',
+            description: 'Implementation specs and milestones.',
             sections: [
               {
-                title: 'Live Ingest',
-                items: ['Simulated 250ms WebRTC ingest frames received successfully.'],
+                title: 'Technical Scope',
+                items: [
+                  'Validated WebRTC audio stream ingest with zero frame dropping.',
+                  'Real-time diarization attribution mapped to verified participant profiles.',
+                ],
               },
             ],
           },
           'sales-discovery': {
-            title: 'Sales Notes',
-            description: 'Commercial notes.',
+            title: 'Commercial Framework',
+            description: 'Commercial and contractual terms.',
             sections: [
               {
-                title: 'Notes',
-                items: ['Simulated meeting recorded in mock workspace.'],
+                title: 'Next Milestones',
+                items: [
+                  'Deliver evaluation agreement to legal team.',
+                  'Schedule executive sponsor briefing.',
+                ],
               },
             ],
           },
           'one-on-one': {
             title: 'Team Notes',
-            description: 'General notes.',
+            description: 'Internal sync notes.',
             sections: [
               {
-                title: 'Notes',
-                items: ['Simulated 1-on-1 capture completed.'],
+                title: 'Action items',
+                items: ['Follow up with attendees on key deliverables.'],
               },
             ],
           },
           'customer-success': {
-            title: 'Customer Ops',
-            description: 'Ops notes.',
+            title: 'Account Health',
+            description: 'Customer adoption notes.',
             sections: [
               {
-                title: 'Notes',
-                items: ['Simulated session completed.'],
+                title: 'Health Score',
+                items: ['Account in excellent standing with positive stakeholder feedback.'],
               },
             ],
           },
         },
       },
-      actionItems: [
-        {
-          id: `act-sim-1`,
-          text: `Review post-meeting executive brief for ${meetingTitle}`,
-          assigneeId: 'spk-you',
-          assigneeName: 'Ayan Aslam',
-          dueDate: 'Tomorrow',
-          completed: false,
-          timestampSeconds: 5,
-          formattedTime: '00:05',
-        },
-      ],
+      actionItems: preset.actionItems.map((act, i) => ({
+        id: `act-sim-${Date.now()}-${i}`,
+        text: act.text,
+        assigneeId: i === 0 ? 'spk-you' : 'spk-guest',
+        assigneeName: act.assigneeName,
+        dueDate: act.dueDate,
+        completed: false,
+        timestampSeconds: (i + 1) * 15,
+        formattedTime: formatElapsed((i + 1) * 15),
+      })),
       highlights: [
         {
-          id: `hl-sim-1`,
-          title: 'Live Call Recording Verification',
-          quote: 'Simulated audio frames captured successfully with automated diarization.',
-          speakerName: 'Fathom Notetaker',
-          startTime: 10,
-          formattedTime: '00:10',
+          id: `hl-sim-${Date.now()}`,
+          title: 'Key Strategic Alignment',
+          quote: preset.dialogue[Math.min(3, preset.dialogue.length - 1)].text,
+          speakerName: preset.dialogue[Math.min(3, preset.dialogue.length - 1)].speaker,
+          startTime: 12,
+          formattedTime: '00:12',
           category: 'milestone',
         },
       ],
@@ -196,7 +379,7 @@ export default function RecordMeetingModal() {
         const timeSec = idx * 6;
         return {
           id: `seg-sim-${idx}`,
-          speakerId: idx % 2 === 0 ? 'spk-you' : 'spk-bot',
+          speakerId: idx % 2 === 0 ? 'spk-you' : 'spk-guest',
           speakerName: speaker,
           startTime: timeSec,
           endTime: timeSec + 5,
@@ -206,13 +389,9 @@ export default function RecordMeetingModal() {
       }),
     };
 
+    // Push new meeting to dashboard and select it
     addMeeting(newMeeting);
-    setRecordModalOpen(false);
-  };
-
-  const handleClose = () => {
-    setIsRecording(false);
-    setRecordModalOpen(false);
+    onSaved();
   };
 
   return (
@@ -231,7 +410,7 @@ export default function RecordMeetingModal() {
           </div>
 
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -243,7 +422,7 @@ export default function RecordMeetingModal() {
           <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div className="text-[11px] leading-relaxed">
             <span className="font-bold">Simulated Assistant Disclosure: </span>
-            This is a local simulated recording workflow for demonstration. No microphone audio is accessed, and no third-party call connection (Zoom/Meet/Teams) is established.
+            This is a local simulated recording workflow for demonstration. No microphone audio is accessed, and no third-party call connection is established.
           </div>
         </div>
 
@@ -253,15 +432,25 @@ export default function RecordMeetingModal() {
             /* Setup Phase */
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Meeting Title
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Meeting Title
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleCyclePreset}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Cycle SaaS Topic</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={meetingTitle}
                   onChange={(e) => setMeetingTitle(e.target.value)}
                   className="w-full text-xs sm:text-sm px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:bg-white text-slate-900"
-                  placeholder="e.g. Core Infrastructure Review"
+                  placeholder="e.g. Client Discovery — TechCorp"
                 />
               </div>
 
@@ -295,10 +484,10 @@ export default function RecordMeetingModal() {
               <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-xs text-slate-600 space-y-1">
                 <div className="font-bold text-slate-900 flex items-center gap-1.5">
                   <Bot className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Bot Behavior</span>
+                  <span>Simulated AI Notetaker</span>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  When you start recording, the simulated Fathom bot will enter the mock session, simulate incoming speaker dialogue, and compile an AI summary upon conclusion.
+                  Topic: <span className="font-semibold text-slate-700">{currentPreset.category}</span>. Starting the recording simulates natural live speaker dialogue and automatically synthesizes a crisp 1-sentence AI summary upon conclusion.
                 </p>
               </div>
 
@@ -351,9 +540,9 @@ export default function RecordMeetingModal() {
               </div>
 
               {/* Streaming Dialogue Box */}
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 h-32 overflow-y-auto space-y-1.5 text-xs text-slate-700 font-mono">
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 h-36 overflow-y-auto space-y-1.5 text-xs text-slate-700 font-mono">
                 {simulatedLiveDialogue.map((item, idx) => (
-                  <div key={idx} className="animate-in fade-in duration-200">
+                  <div key={idx} className="animate-in fade-in duration-200 leading-relaxed">
                     {item}
                   </div>
                 ))}
@@ -393,5 +582,24 @@ export default function RecordMeetingModal() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RecordMeetingModal() {
+  const { recordModalOpen, setRecordModalOpen } = useMeeting();
+  const [sessionCount, setSessionCount] = useState(0);
+
+  if (!recordModalOpen) return null;
+
+  return (
+    <RecordMeetingModalContent
+      key={sessionCount}
+      initialPresetIndex={sessionCount}
+      onClose={() => setRecordModalOpen(false)}
+      onSaved={() => {
+        setSessionCount((prev) => prev + 1);
+        setRecordModalOpen(false);
+      }}
+    />
   );
 }

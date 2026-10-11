@@ -210,8 +210,91 @@ export default function MeetingDashboard() {
         </div>
       </div>
 
+      {/* Pinned 8-Person 60-Minute Benchmark Call */}
+      {(() => {
+        const eightPersonMeeting = meetings.find((m) => m.id === 'meeting-8p-60m');
+        if (!eightPersonMeeting) return null;
+        return (
+          <div
+            onClick={() => setSelectedMeetingId('meeting-8p-60m')}
+            className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white border-2 border-indigo-400/50 shadow-xl shadow-indigo-950/20 cursor-pointer hover:border-indigo-300 transition-all group relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+              <div className="space-y-3 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <span>📌</span> PINNED MANDATORY BENCHMARK CALL
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-xs font-semibold">
+                    60m (3,600s) Duration
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-xs font-semibold">
+                    8 Distinct Speakers
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 text-xs font-semibold">
+                    171 Chronological Segments
+                  </span>
+                </div>
+
+                <h3 className="text-lg sm:text-2xl font-bold text-white group-hover:text-indigo-200 transition-colors flex items-center gap-2">
+                  <span>{eightPersonMeeting.title}</span>
+                  <ArrowUpRight className="w-5 h-5 text-indigo-300 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </h3>
+
+                <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed max-w-3xl">
+                  {eightPersonMeeting.summary.overview}
+                </p>
+
+                {/* 8 Speakers Chips */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">
+                    All 8 Speakers:
+                  </span>
+                  {eightPersonMeeting.participants.map((p) => (
+                    <span
+                      key={p.id}
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 border border-white/10 text-xs text-white transition-colors"
+                    >
+                      <span
+                        style={{ backgroundColor: p.color }}
+                        className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                      >
+                        {p.avatar}
+                      </span>
+                      <span className="font-medium">{p.name}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="shrink-0 flex lg:flex-col items-center lg:items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-white/10">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedMeetingId('meeting-8p-60m');
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 group-hover:scale-102 cursor-pointer"
+                >
+                  <span>Open 60m Workspace</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
+                <span className="text-xs text-indigo-300 font-mono">
+                  October 10, 2026 • 2:00 PM EST
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Meeting Cards List */}
       <div className="space-y-3">
+        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
+          All Workspace Sessions ({filteredMeetings.length})
+        </div>
+
         {filteredMeetings.length === 0 ? (
           <div className="bg-white p-12 text-center rounded-xl border border-dashed border-slate-300">
             <Search className="w-8 h-8 text-slate-400 mx-auto mb-3" />
@@ -238,7 +321,7 @@ export default function MeetingDashboard() {
                 onClick={() => setSelectedMeetingId(meeting.id)}
                 className={`bg-white rounded-xl border transition-all duration-200 p-4 sm:p-5 hover:shadow-md cursor-pointer group ${
                   isEightPerson
-                    ? 'border-indigo-200 hover:border-indigo-400 bg-gradient-to-r from-white via-white to-indigo-50/20'
+                    ? 'border-indigo-300 hover:border-indigo-500 bg-gradient-to-r from-white via-white to-indigo-50/30 shadow-xs'
                     : 'border-slate-200/90 hover:border-blue-400'
                 }`}
               >
@@ -260,9 +343,9 @@ export default function MeetingDashboard() {
                         {meeting.category}
                       </span>
                       {isEightPerson && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300/50 flex items-center gap-1">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300/60 flex items-center gap-1">
                           <Sparkles className="w-3 h-3 text-amber-600" />
-                          Featured 8-Speaker • 60m Call
+                          📌 Pinned Benchmark • 8 Speakers • 60m
                         </span>
                       )}
                     </div>
@@ -282,24 +365,24 @@ export default function MeetingDashboard() {
                   {/* Right metadata / participants */}
                   <div className="flex md:flex-col items-center md:items-end justify-between gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
                     <div className="flex items-center gap-1.5">
-                      <div className="flex -space-x-2 overflow-hidden py-1">
+                      <div className="flex items-center -space-x-1 shrink-0 py-0.5">
                         {meeting.participants.slice(0, 5).map((p) => (
                           <div
                             key={p.id}
                             title={`${p.name} (${p.role})`}
                             style={{ backgroundColor: p.color }}
-                            className="inline-block h-7 w-7 rounded-full text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white shadow-xs"
+                            className="w-7 h-7 min-w-[28px] min-h-[28px] max-w-[28px] max-h-[28px] shrink-0 rounded-full text-white text-[10px] font-bold tracking-tight leading-none flex items-center justify-center ring-2 ring-white shadow-xs select-none"
                           >
                             {p.avatar}
                           </div>
                         ))}
                         {meeting.participants.length > 5 && (
-                          <div className="inline-block h-7 w-7 rounded-full bg-slate-800 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white shadow-xs">
+                          <div className="w-7 h-7 min-w-[28px] min-h-[28px] max-w-[28px] max-h-[28px] shrink-0 rounded-full bg-slate-800 text-white text-[10px] font-bold tracking-tight leading-none flex items-center justify-center ring-2 ring-white shadow-xs select-none">
                             +{meeting.participants.length - 5}
                           </div>
                         )}
                       </div>
-                      <span className="text-xs font-medium text-slate-500 ml-1">
+                      <span className="text-xs font-medium text-slate-500 ml-1.5 whitespace-nowrap">
                         {meeting.participants.length} speakers
                       </span>
                     </div>
