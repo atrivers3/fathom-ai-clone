@@ -243,7 +243,7 @@ function RecordMeetingModalContent({
     setSimulatedLiveDialogue([`${nextPreset.dialogue[0].speaker}: ${nextPreset.dialogue[0].text}`]);
   };
 
-  const handleStopAndSave = () => {
+  const handleStopAndSave = async () => {
     const duration = Math.max(60, elapsedSeconds);
     const newMeetingId = `meeting-sim-${Date.now()}`;
     const preset = SAAS_PRESETS[activePresetIndex % SAAS_PRESETS.length];
@@ -389,8 +389,8 @@ function RecordMeetingModalContent({
       }),
     };
 
-    // Push new meeting to dashboard and select it
-    addMeeting(newMeeting);
+    // Push new meeting to backend API and dashboard before closing
+    await addMeeting(newMeeting);
     onSaved();
   };
 
