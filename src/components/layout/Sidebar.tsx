@@ -9,7 +9,6 @@ import {
   FileText,
   Settings,
   CircleDot,
-  Radio,
   HardDrive,
   Sparkles,
 } from 'lucide-react';
@@ -26,7 +25,6 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
     selectedMeetingId,
     setSelectedMeetingId,
     meetings,
-    setRecordModalOpen,
   } = useMeeting();
 
   const handleNavClick = (view: ActiveView) => {
@@ -93,19 +91,6 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
           </button>
         </div>
 
-        {/* Record New Call Button */}
-        <div className="p-3">
-          <button
-            onClick={() => {
-              setRecordModalOpen(true);
-              setMobileOpen(false);
-            }}
-            className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium text-sm shadow-md shadow-blue-500/20 transition-all hover:shadow-indigo-500/30 active:scale-[0.98] cursor-pointer"
-          >
-            <Radio className="w-4 h-4 animate-pulse text-red-300" />
-            <span>Simulate Recording</span>
-          </button>
-        </div>
 
         {/* Main Navigation */}
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">

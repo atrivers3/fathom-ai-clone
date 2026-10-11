@@ -77,6 +77,10 @@ export default function MeetingDashboard() {
         return true;
       })
       .sort((a, b) => {
+        // Pinned 8-person benchmark always appears at the top
+        if (a.id === 'meeting-8p-60m') return -1;
+        if (b.id === 'meeting-8p-60m') return 1;
+
         if (sortBy === 'duration') {
           return b.durationSeconds - a.durationSeconds;
         }
@@ -210,84 +214,7 @@ export default function MeetingDashboard() {
         </div>
       </div>
 
-      {/* Pinned 8-Person 60-Minute Benchmark Call */}
-      {(() => {
-        const eightPersonMeeting = meetings.find((m) => m.id === 'meeting-8p-60m');
-        if (!eightPersonMeeting) return null;
-        return (
-          <div
-            onClick={() => setSelectedMeetingId('meeting-8p-60m')}
-            className="bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white border-2 border-indigo-400/50 shadow-xl shadow-indigo-950/20 cursor-pointer hover:border-indigo-300 transition-all group relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
-              <div className="space-y-3 flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                    <span>📌</span> PINNED MANDATORY BENCHMARK CALL
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-xs font-semibold">
-                    60m (3,600s) Duration
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-xs font-semibold">
-                    8 Distinct Speakers
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 text-xs font-semibold">
-                    171 Chronological Segments
-                  </span>
-                </div>
 
-                <h3 className="text-lg sm:text-2xl font-bold text-white group-hover:text-indigo-200 transition-colors flex items-center gap-2">
-                  <span>{eightPersonMeeting.title}</span>
-                  <ArrowUpRight className="w-5 h-5 text-indigo-300 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </h3>
-
-                <p className="text-xs sm:text-sm text-indigo-100/90 leading-relaxed max-w-3xl">
-                  {eightPersonMeeting.summary.overview}
-                </p>
-
-                {/* 8 Speakers Chips */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">
-                    All 8 Speakers:
-                  </span>
-                  {eightPersonMeeting.participants.map((p) => (
-                    <span
-                      key={p.id}
-                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 border border-white/10 text-xs text-white transition-colors"
-                    >
-                      <span
-                        style={{ backgroundColor: p.color }}
-                        className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
-                      >
-                        {p.avatar}
-                      </span>
-                      <span className="font-medium">{p.name}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="shrink-0 flex lg:flex-col items-center lg:items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-white/10">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedMeetingId('meeting-8p-60m');
-                  }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 group-hover:scale-102 cursor-pointer"
-                >
-                  <span>Open 60m Workspace</span>
-                  <ArrowUpRight className="w-4 h-4" />
-                </button>
-                <span className="text-xs text-indigo-300 font-mono">
-                  October 10, 2026 • 2:00 PM EST
-                </span>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Meeting Cards List */}
       <div className="space-y-3">
