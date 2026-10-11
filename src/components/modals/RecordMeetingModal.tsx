@@ -13,6 +13,7 @@ import {
   Video,
   Bot,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 
 interface PresetDefinition {
@@ -186,6 +187,8 @@ function RecordMeetingModalContent({
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [simulatedLiveDialogue, setSimulatedLiveDialogue] = useState<string[]>([
     `${currentPreset.dialogue[0].speaker}: ${currentPreset.dialogue[0].text}`,
   ]);
@@ -229,6 +232,7 @@ function RecordMeetingModalContent({
     setIsRecording(true);
     setIsPaused(false);
     setElapsedSeconds(0);
+    setSaveError(null);
     dialogueIndexRef.current = 1;
     const preset = SAAS_PRESETS[activePresetIndex % SAAS_PRESETS.length];
     setSimulatedLiveDialogue([`${preset.dialogue[0].speaker}: ${preset.dialogue[0].text}`]);
@@ -243,7 +247,7 @@ function RecordMeetingModalContent({
     setSimulatedLiveDialogue([`${nextPreset.dialogue[0].speaker}: ${nextPreset.dialogue[0].text}`]);
   };
 
-  const handleStopAndSave = () => {
+  const handleStopAndSave = async () => {
     const duration = Math.max(60, elapsedSeconds);
     const newMeetingId = `meeting-sim-${Date.now()}`;
     const preset = SAAS_PRESETS[activePresetIndex % SAAS_PRESETS.length];
@@ -389,8 +393,21 @@ function RecordMeetingModalContent({
       }),
     };
 
-    // Push new meeting to dashboard and select it
-    addMeeting(newMeeting);
+    setIsSaving(true);
+    setSaveError(null);
+
+    // Push new meeting to backend API before closing modal
+    const result = await addMeeting(newMeeting);
+    setIsSaving(false);
+
+    if (!result.success) {
+      setSaveError(
+        result.error ||
+          'Failed to persist meeting to database. Check Supabase connection and table RLS policies.'
+      );
+      return;
+    }
+
     onSaved();
   };
 
@@ -548,12 +565,24 @@ function RecordMeetingModalContent({
                 ))}
               </div>
 
+              {/* Error Banner if Persistence Fails */}
+              {saveError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3.5 py-2.5 rounded-xl text-xs flex items-start gap-2.5 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-0.5">
+                    <div className="font-bold text-red-800">Persistence Error</div>
+                    <div className="text-[11px] leading-relaxed break-words">{saveError}</div>
+                  </div>
+                </div>
+              )}
+
               {/* Controls */}
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => setIsPaused(!isPaused)}
-                  className="flex-1 py-2 px-3 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="flex-1 py-2 px-3 rounded-lg border border-slate-300 hover:bg-slate-100 disabled:opacity-50 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {isPaused ? (
                     <>
@@ -570,11 +599,21 @@ function RecordMeetingModalContent({
 
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={handleStopAndSave}
-                  className="flex-2 py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="flex-2 py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
-                  <Square className="w-3.5 h-3.5 fill-current text-red-400" />
-                  <span>End & Generate Summary</span>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                      <span>Saving to Supabase...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Square className="w-3.5 h-3.5 fill-current text-red-400" />
+                      <span>End & Generate Summary</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
