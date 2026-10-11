@@ -17,7 +17,7 @@ interface MeetingContextType {
   setSearchQuery: (query: string) => void;
   toggleActionItem: (meetingId: string, actionId: string) => void;
   addActionItem: (meetingId: string, text: string, assigneeName: string, dueDate: string) => void;
-  addMeeting: (newMeeting: Meeting) => Promise<void>;
+  addMeeting: (newMeeting: Meeting) => Promise<{ success: boolean; error?: string }>;
   // Playback state shared between player & transcript
   currentTime: number;
   setCurrentTime: (time: number) => void;
@@ -199,7 +199,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const addMeeting = async (newMeeting: Meeting) => {
+  const addMeeting = async (newMeeting: Meeting): Promise<{ success: boolean; error?: string }> => {
     try {
       // Persist to backend Route Handler before showing
       const res = await fetch('/api/meetings', {
@@ -207,15 +207,23 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newMeeting),
       });
+
       if (!res.ok) {
-        console.warn('POST /api/meetings returned non-200 status:', res.status);
+        const errorJson = await res.json().catch(() => null);
+        const errMsg = errorJson?.error || `Server responded with status ${res.status}`;
+        console.error('Failed to persist meeting to API:', errMsg);
+        return { success: false, error: errMsg };
       }
-    } catch (err) {
-      console.error('Failed to persist meeting to API:', err);
-    } finally {
+
+      // Persisted successfully: commit to local React state and navigate
       setMeetings((prev) => [newMeeting, ...prev]);
       changeSelectedMeetingId(newMeeting.id);
       setActiveView('meetings');
+      return { success: true };
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Network error';
+      console.error('Failed to persist meeting to API:', errMsg);
+      return { success: false, error: errMsg };
     }
   };
 

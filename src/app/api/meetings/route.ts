@@ -20,7 +20,7 @@ export async function GET() {
       return NextResponse.json({
         data: INITIAL_MEETINGS,
         source: 'local-fallback',
-        message: 'Supabase credentials not configured. Serving default mock meetings.',
+        message: 'Supabase credentials not configured in .env.local. Serving initial mock meetings.',
       });
     }
 
@@ -51,16 +51,21 @@ export async function GET() {
     const meetingIds = meetingsData.map((m: DbMeetingRow) => m.id);
 
     const [
-      { data: participantsData },
-      { data: transcriptData },
-      { data: actionItemsData },
-      { data: highlightsData },
+      { data: participantsData, error: pError },
+      { data: transcriptData, error: tError },
+      { data: actionItemsData, error: aError },
+      { data: highlightsData, error: hError },
     ] = await Promise.all([
       supabase.from('participants').select('*').in('meeting_id', meetingIds),
       supabase.from('transcript_segments').select('*').in('meeting_id', meetingIds).order('start_time', { ascending: true }),
       supabase.from('action_items').select('*').in('meeting_id', meetingIds),
       supabase.from('highlights').select('*').in('meeting_id', meetingIds),
     ]);
+
+    if (pError) console.error('Error fetching participants:', pError);
+    if (tError) console.error('Error fetching transcript segments:', tError);
+    if (aError) console.error('Error fetching action items:', aError);
+    if (hError) console.error('Error fetching highlights:', hError);
 
     const participantsByMeeting = (participantsData || []).reduce(
       (acc: Record<string, DbParticipantRow[]>, row: DbParticipantRow) => {
@@ -128,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     if (!meeting || !meeting.id || !meeting.title) {
       return NextResponse.json(
-        { error: 'Invalid meeting payload. Missing id or title.' },
+        { error: 'Invalid meeting payload. Missing meeting id or title.' },
         { status: 400 }
       );
     }
@@ -138,12 +143,10 @@ export async function POST(request: NextRequest) {
     if (!supabase || !isSupabaseConfigured()) {
       return NextResponse.json(
         {
-          success: true,
-          data: meeting,
-          source: 'in-memory-fallback',
-          message: 'Supabase credentials not configured. Meeting kept in application session.',
+          error:
+            'Supabase credentials are not configured or invalid in .env.local. Please provide NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.',
         },
-        { status: 201 }
+        { status: 503 }
       );
     }
 
@@ -155,42 +158,97 @@ export async function POST(request: NextRequest) {
       highlightRows,
     } = toDbMeetingPayload(meeting);
 
-    // Upsert meeting record
+    // 1. Upsert meeting record
     const { error: meetingError } = await supabase
       .from('meetings')
-      .upsert(meetingRow);
+      .upsert(meetingRow, { onConflict: 'id' });
 
     if (meetingError) {
       console.error('Error saving meeting to Supabase:', meetingError);
       return NextResponse.json(
-        { error: meetingError.message },
+        {
+          error: `Failed to save meeting record: ${meetingError.message}`,
+          details: meetingError,
+          table: 'meetings',
+        },
         { status: 500 }
       );
     }
 
-    // Upsert related records
+    // 2. Upsert participants
     if (participantRows.length > 0) {
-      await supabase.from('participants').upsert(participantRows, {
-        onConflict: 'meeting_id,id',
-      });
+      const { error: pError } = await supabase
+        .from('participants')
+        .upsert(participantRows, { onConflict: 'meeting_id,id' });
+
+      if (pError) {
+        console.error('Error saving participants to Supabase:', pError);
+        return NextResponse.json(
+          {
+            error: `Failed to save participants: ${pError.message}`,
+            details: pError,
+            table: 'participants',
+          },
+          { status: 500 }
+        );
+      }
     }
 
+    // 3. Upsert transcript segments
     if (transcriptRows.length > 0) {
-      await supabase.from('transcript_segments').upsert(transcriptRows, {
-        onConflict: 'meeting_id,id',
-      });
+      const { error: tError } = await supabase
+        .from('transcript_segments')
+        .upsert(transcriptRows, { onConflict: 'meeting_id,id' });
+
+      if (tError) {
+        console.error('Error saving transcript segments to Supabase:', tError);
+        return NextResponse.json(
+          {
+            error: `Failed to save transcript segments: ${tError.message}`,
+            details: tError,
+            table: 'transcript_segments',
+          },
+          { status: 500 }
+        );
+      }
     }
 
+    // 4. Upsert action items
     if (actionItemRows.length > 0) {
-      await supabase.from('action_items').upsert(actionItemRows, {
-        onConflict: 'meeting_id,id',
-      });
+      const { error: aError } = await supabase
+        .from('action_items')
+        .upsert(actionItemRows, { onConflict: 'meeting_id,id' });
+
+      if (aError) {
+        console.error('Error saving action items to Supabase:', aError);
+        return NextResponse.json(
+          {
+            error: `Failed to save action items: ${aError.message}`,
+            details: aError,
+            table: 'action_items',
+          },
+          { status: 500 }
+        );
+      }
     }
 
+    // 5. Upsert highlights
     if (highlightRows.length > 0) {
-      await supabase.from('highlights').upsert(highlightRows, {
-        onConflict: 'meeting_id,id',
-      });
+      const { error: hError } = await supabase
+        .from('highlights')
+        .upsert(highlightRows, { onConflict: 'meeting_id,id' });
+
+      if (hError) {
+        console.error('Error saving highlights to Supabase:', hError);
+        return NextResponse.json(
+          {
+            error: `Failed to save highlights: ${hError.message}`,
+            details: hError,
+            table: 'highlights',
+          },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json(

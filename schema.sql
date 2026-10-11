@@ -94,40 +94,37 @@ ALTER TABLE public.transcript_segments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.action_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.highlights ENABLE ROW LEVEL SECURITY;
 
--- Allow read access for authenticated and anonymous users
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read access on meetings') THEN
-    CREATE POLICY "Allow public read access on meetings" ON public.meetings FOR SELECT USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public full access on meetings') THEN
-    CREATE POLICY "Allow public full access on meetings" ON public.meetings FOR ALL USING (true) WITH CHECK (true);
-  END IF;
+-- 1. Grant Table Permissions to anon, authenticated, and service_role
+GRANT ALL ON TABLE public.meetings TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.participants TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.transcript_segments TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.action_items TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.highlights TO anon, authenticated, service_role;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read access on participants') THEN
-    CREATE POLICY "Allow public read access on participants" ON public.participants FOR SELECT USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public full access on participants') THEN
-    CREATE POLICY "Allow public full access on participants" ON public.participants FOR ALL USING (true) WITH CHECK (true);
-  END IF;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read access on transcript_segments') THEN
-    CREATE POLICY "Allow public read access on transcript_segments" ON public.transcript_segments FOR SELECT USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public full access on transcript_segments') THEN
-    CREATE POLICY "Allow public full access on transcript_segments" ON public.transcript_segments FOR ALL USING (true) WITH CHECK (true);
-  END IF;
+-- 2. Explicit Permissive Policies for anon, authenticated, and service_role
+CREATE POLICY "meetings_select_policy" ON public.meetings FOR SELECT TO anon, authenticated, service_role USING (true);
+CREATE POLICY "meetings_insert_policy" ON public.meetings FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+CREATE POLICY "meetings_update_policy" ON public.meetings FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "meetings_delete_policy" ON public.meetings FOR DELETE TO anon, authenticated, service_role USING (true);
 
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read access on action_items') THEN
-    CREATE POLICY "Allow public read access on action_items" ON public.action_items FOR SELECT USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public full access on action_items') THEN
-    CREATE POLICY "Allow public full access on action_items" ON public.action_items FOR ALL USING (true) WITH CHECK (true);
-  END IF;
+CREATE POLICY "participants_select_policy" ON public.participants FOR SELECT TO anon, authenticated, service_role USING (true);
+CREATE POLICY "participants_insert_policy" ON public.participants FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+CREATE POLICY "participants_update_policy" ON public.participants FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "participants_delete_policy" ON public.participants FOR DELETE TO anon, authenticated, service_role USING (true);
 
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read access on highlights') THEN
-    CREATE POLICY "Allow public read access on highlights" ON public.highlights FOR SELECT USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public full access on highlights') THEN
-    CREATE POLICY "Allow public full access on highlights" ON public.highlights FOR ALL USING (true) WITH CHECK (true);
-  END IF;
-END $$;
+CREATE POLICY "transcripts_select_policy" ON public.transcript_segments FOR SELECT TO anon, authenticated, service_role USING (true);
+CREATE POLICY "transcripts_insert_policy" ON public.transcript_segments FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+CREATE POLICY "transcripts_update_policy" ON public.transcript_segments FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "transcripts_delete_policy" ON public.transcript_segments FOR DELETE TO anon, authenticated, service_role USING (true);
+
+CREATE POLICY "action_items_select_policy" ON public.action_items FOR SELECT TO anon, authenticated, service_role USING (true);
+CREATE POLICY "action_items_insert_policy" ON public.action_items FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+CREATE POLICY "action_items_update_policy" ON public.action_items FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "action_items_delete_policy" ON public.action_items FOR DELETE TO anon, authenticated, service_role USING (true);
+
+CREATE POLICY "highlights_select_policy" ON public.highlights FOR SELECT TO anon, authenticated, service_role USING (true);
+CREATE POLICY "highlights_insert_policy" ON public.highlights FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+CREATE POLICY "highlights_update_policy" ON public.highlights FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "highlights_delete_policy" ON public.highlights FOR DELETE TO anon, authenticated, service_role USING (true);
